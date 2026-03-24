@@ -1,17 +1,37 @@
 import streamlit as st
-from supabase import create_client
+import psycopg2
+from psycopg2.extras import execute_values
 import os
 
 # ── Configuración ──────────────────────────────────────────────────────────────
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://TU_PROJECT.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "TU_ANON_KEY")
-TABLE_NAME   = "proyectos_evento"
+DB_HOST     = os.environ.get("DB_HOST",     "TU_HOST_DEL_POOLER")
+DB_PORT     = int(os.environ.get("DB_PORT", 5432))
+DB_NAME     = os.environ.get("DB_NAME",     "postgres")
+DB_USER     = os.environ.get("DB_USER",     "postgres.TU_PROJECT_REF")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "TU_PASSWORD")
+TABLE_NAME  = "proyectos_evento"
 
 @st.cache_resource
-def get_client():
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+def get_conn():
+    return psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        sslmode="require",
+        connect_timeout=10,
+    )
 
-supabase = get_client()
+def insert_row(payload: dict):
+    """Inserta una fila en la tabla y hace commit."""
+    cols = ", ".join(payload.keys())
+    placeholders = ", ".join(["%s"] * len(payload))
+    sql = f"INSERT INTO {TABLE_NAME} ({cols}) VALUES ({placeholders})"
+    conn = get_conn()
+    with conn.cursor() as cur:
+        cur.execute(sql, list(payload.values()))
+    conn.commit()
 
 # ── Estilos ────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -321,7 +341,7 @@ if submitted:
         }
 
         try:
-            supabase.table(TABLE_NAME).insert(payload).execute()
+            insert_row(payload)
             st.success("✅ ¡Tu proyecto fue registrado! Ya aparece en el tablero de Power BI.")
             st.balloons()
             st.markdown(
@@ -335,6 +355,16 @@ if submitted:
                 </div>""",
                 unsafe_allow_html=True,
             )
+        except psycopg2.OperationalError:
+            # Conexión caída (pooler timeout) — limpiar caché y reintentar una vez
+            st.cache_resource.clear()
+            try:
+                insert_row(payload)
+                st.success("✅ ¡Tu proyecto fue registrado! Ya aparece en el tablero de Power BI.")
+                st.balloons()
+            except Exception as e2:
+                st.error(f"No se pudo conectar a la base de datos: {e2}")
+                st.info("Verifica DB_HOST, DB_USER y DB_PASSWORD en las variables de entorno.")
         except Exception as e:
             st.error(f"Error al guardar: {e}")
-            st.info("Verifica que SUPABASE_URL y SUPABASE_KEY estén configurados correctamente.")
+            st.info("Verifica la configuración de conexión al pooler de Supabase.")
