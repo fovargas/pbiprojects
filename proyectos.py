@@ -237,7 +237,7 @@ with st.form("form_proyectos", clear_on_submit=True):
             "— Selecciona —",
             "Dentro del rango",
             "Sobreejecutado (gastamos más de lo planeado)",
-            "Subejectado (gastamos menos, hay retraso de actividades)",
+            "Subejecutado (gastamos menos, hay retraso de actividades)",
             "No tenemos presupuesto formalmente definido",
         ],
     )
