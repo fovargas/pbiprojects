@@ -1,14 +1,13 @@
 import streamlit as st
 import psycopg2
 from psycopg2.extras import execute_values
-import os
 
-# ── Configuración ──────────────────────────────────────────────────────────────
-DB_HOST     = os.environ.get("DB_HOST",     "TU_HOST_DEL_POOLER")
-DB_PORT     = int(os.environ.get("DB_PORT", 5432))
-DB_NAME     = os.environ.get("DB_NAME",     "postgres")
-DB_USER     = os.environ.get("DB_USER",     "postgres.TU_PROJECT_REF")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "TU_PASSWORD")
+# ── Configuración — leída desde .streamlit/secrets.toml ───────────────────────
+DB_HOST     = st.secrets["database"]["host"]
+DB_PORT     = int(st.secrets["database"]["port"])
+DB_NAME     = st.secrets["database"]["name"]
+DB_USER     = st.secrets["database"]["user"]
+DB_PASSWORD = st.secrets["database"]["password"]
 TABLE_NAME  = "proyectos_evento"
 
 @st.cache_resource
