@@ -1,13 +1,13 @@
 import streamlit as st
 import psycopg2
-from psycopg2.extras import execute_values
+from psycopg2.extras import RealDictCursor, execute_values
 
 # ── Configuración — leída desde .streamlit/secrets.toml ───────────────────────
-DB_HOST     = st.secrets["database"]["host"]
-DB_PORT     = int(st.secrets["database"]["port"])
-DB_NAME     = st.secrets["database"]["name"]
-DB_USER     = st.secrets["database"]["user"]
-DB_PASSWORD = st.secrets["database"]["password"]
+DB_HOST     = st.secrets["db_host"],
+DB_PORT     = st.secrets["db_port"],
+DB_NAME     = st.secrets["db_name"],
+DB_USER     = st.secrets["db_user"],
+DB_PASSWORD = st.secrets["db_password"],
 TABLE_NAME  = "proyectos_evento"
 
 @st.cache_resource
@@ -19,7 +19,7 @@ def get_conn():
         user=DB_USER,
         password=DB_PASSWORD,
         sslmode="require",
-        connect_timeout=10,
+        cursor_factory=RealDictCursor,
     )
 
 def insert_row(payload: dict):
